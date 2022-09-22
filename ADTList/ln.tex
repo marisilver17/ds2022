@@ -1,0 +1,996 @@
+%!Tex Program = xelatex
+%\documentclass[a4paper]{article}
+\documentclass[a4paper]{ctexart}
+\usepackage{xltxtra}
+%\setmainfont[Mapping=tex-text]{AR PL UMing CN:style=Light}
+%\setmainfont[Mapping=tex-text]{AR PL UKai CN:style=Book}
+%\setmainfont[Mapping=tex-text]{WenQuanYi Zen Hei:style=Regular}
+%\setmainfont[Mapping=tex-text]{WenQuanYi Zen Hei Sharp:style=Regular}
+%\setmainfont[Mapping=tex-text]{AR PL KaitiM GB:style=Regular} 
+%\setmainfont[Mapping=tex-text]{AR PL SungtiL GB:style=Regular} 
+%\setmainfont[Mapping=tex-text]{WenQuanYi Zen Hei Mono:style=Regular} 
+
+\usepackage{listings}
+\usepackage{xcolor}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+\title{表, 堆栈和队列}
+\author{王何宇}
+\date{}
+\begin{document}
+\maketitle
+\pagestyle{empty}
+
+本章讨论最简单和基础的数据结构(data structure). 我们会介绍抽象数据类型
+(Abstract Data Type, ADT) 的概念；与之相关的操作；以及 C++ 的实现.
+本课程不会专门留出时间介绍 C++ 编程, 而是在实际学习过程中不断引入 C++
+的概念和实现. 我们需要具备在一个实际工作中不断学习的能力. 当然, 如果你具备一定的
+C++ 及编程的基础, 无疑会提高学习和工作的效率. 但我们并不假定这一条件总是具备.
+
+可以认为 ADT 是一个抽象的数学概念. 我们定义它为一个由基本元素构成的集合,
+以及相应的操作(operation). 比如我们可以定义一个数据类型名为 set,
+一个 set 可以包含有限个或零个元素. 我们可以定义操作为 add, 即增加一个指定的元素；
+操作 remove, 删除一个指定的元素；操作 size, 计算当前元素总数, 等等.
+
+不同的编程语言, 都不难将上述概念具体化. 比如将元素具体为一个浮点数,
+然后我们可以讨论如何实现一个有限的浮点数集, 并将其用于我们具体的问题中. 而 C++
+提供了面向对象设计(object-oriented)的能力, 因此可以将这件事情做的更加直接. 一个
+C++ 类(class), 允许将数据结构和操作捆绑在一起定义, 因此几乎可以直接视为一个 ADT
+的实现.
+
+\section{抽象数据结构: 表(List)}
+
+我们称有限个元素组成的序列 $A_0$, $A_1$, $\cdots$, $A_{N - 1}$ 为一个 ADT List.
+表的长度 (size) 为非负整数 $N$. 如果 $N == 0$ 为真, 我们称该表为空表(empty list).
+
+对非空表中元素 $A_i$, $0 \leq i < N$, $A_{i - 1}$ 称为它的前任 (predecessor),
+$A_{i + 1}$ 称为它的继任 (successor). 当然, 前任和继任可以不存在. 而自然数 $i$ 称为
+$A_i$ 的位置 (position).
+
+我们可以定义以下一些常见的操作:
+\begin{itemize}
+\item
+\begin{verbatim}
+printList
+\end{verbatim}
+输出表中全部元素. 空表则什么也不输出.
+
+\item
+\begin{verbatim}
+makeEmpty
+\end{verbatim}
+清空列表, 删除全部元素. 空表则什么也不发生. 
+
+\item
+\begin{verbatim}
+find (x)
+\end{verbatim}
+这里 \verb|x| 是一个具体的值, 表中寻找值 \verb|x|, 如果找到, 返回第一
+个找到的 \verb|x| 的位置, 否则返回 \verb|nil|. 这里我们用 \verb|nil|
+代表一个否定的结果, 在具体实现时,可以用一个指定的数或指针.
+
+\item 
+\begin{verbatim}
+insert (x, pos)
+\end{verbatim}
+这里 \verb|x| 是一个具体的值, \verb|pos| 是一个位置, 即在指定位置
+\verb|pos| 前插入一个新元素 \verb|x|, 插入之后新元素 \verb|x| 在表中的
+位置将会是 \verb|pos|. 如果 \verb|pos| 位置不存在, 则报错.
+
+\item
+\begin{verbatim}
+remove (x)
+\end{verbatim}
+删除 \verb|x|, 如果表中没有 \verb|x| 则什么事也不发生. 这里我们可以规
+定, 如果表中不止一个 \verb|x|, 一次只删除第一个发现的那一个. 也即这里
+其实是先操作了一次 \verb|find|. 
+
+\item
+\begin{verbatim}
+findKth (pos)
+\end{verbatim}
+返回第 $pos$ 位置的元素. 如果位置 \verb|pos| 不存在, 则报错.
+
+\item
+\begin{verbatim}
+next (pos)
+\end{verbatim}
+返回第 $pos$ 位置的继任元素的位置. 如果继任不存在, 则返回 NIL.
+
+\item
+\begin{verbatim}
+previous (pos)
+\end{verbatim}
+返回第 $pos$ 位置的前任元素的位置. 如果前任不存在, 则返回 NIL.
+\end{itemize}
+
+我们还可以根据需要, 定义和扩展表的操作功能. 而对于不同的具体实现, 这些
+功能定义也可能得不到严格的遵守(因此需要作出调整和改变).
+
+在以上操作中, 我们发现有些操作是不会改变表的内容和结构的, 如
+\verb|printList| 和 \verb|find|, 这些操作我们一般称为静态操作；而有些
+操作则会改变, 如 \verb|insert| 和 \verb|remove|. 这里我们称其为动态操
+作.
+
+\subsection{表的简单数组(Array)实现}
+数组(Array)是指用一段{\bf 连续}的内存空间来存放一个表. 由于表的每一个
+元素所占内存空间相等, 因此我们只需记录表的第一个元素所在内存地址, 那么
+就可以容易地获得第 $k$ 个元素的内存地址. 在 C / C++ 中, 这个 findKth
+的操作, 直接通过运算 \verb|[]| 实现. 这种实现不但非常简单, 而且是计算
+机存储在系统层面上最基础的方式, 本质上, 我们的全部内存都可以看作按内存
+地址连续存放的一个大数组.
+
+得益于数据在内存中的连续存放, 静态操作如 \verb|findKth| 的时间代价一般
+为 $\O(1)$, 而动态操作如 \verb|insert| 和 \verb|remove| 的代价是
+$\O(N)$. 这是因为我们在改变了表的结构之后, 必须确保数据仍然有序和连续存放. 
+
+换言之, 用 Array 去实现 ADT List, 静态效率较高而动态效率较低. 
+
+我们接下去用 C++ 实现这个操作, 主要目的是用这个简单的模型, 学习 C++ 的
+基本框架.
+
+C++ 的核心模型是类(Class). 以类为核心的编程模型又被成为面向对象编程.
+它要求我们在建模时, 一切围绕类展开. 而一个类, 本质上就是对一个基本数据
+结构的描述, 或者说, 就是 ADT 的一个具体实现. 它要求我们定义两个核心部分:
+\begin{enumerate}
+\item 有哪些数据；
+\item 有哪些操作.
+\end{enumerate}
+注意这个定义和 ADT 一样是抽象的. 比如我们定义学生这个概念类:
+\begin{verbatim}
+class 学生
+{
+/// 数据: 
+    int 学号;
+    bool 性别;
+    double 体重;
+/// 操作:
+    吃(double x); // 体重增加 x.
+    跑(double t); // 体重减轻 t * 0.1. 
+    变性();  // 如果成功, 性别取反.
+    ...
+}
+\end{verbatim}
+
+注意这个概念是抽象的, 它定义了一个作为概念的学生. 根据这个概念, 我们可
+以创建一个具体实体, 称为一个实例. 比如: 张三是一个学生.
+\begin{verbatim}
+学生 张三;
+\end{verbatim}
+那么在这个模型下, 我们就可以对张三作出一些操作和改变:
+\begin{verbatim}
+学生 张三;
+张三.吃(10);
+张三.跑(30);
+张三.变性();
+\end{verbatim}
+
+C++作为一门面向底层建模的语言, 是非常强调安全性和严格的. 因此 C++ 对数
+据的可操作性也做了严格的规定. 具体说就是提供了关键字:
+\begin{itemize}
+\item \verb|private|, 私有的, 只能被类内部的成员函数调用和访问；
+\item \verb|public|, 共有的, 可以被类内和外部的函数调用和访问.  
+\end{itemize}
+
+其实还有一个关键字 \verb|protected| 与此有关, 但我们稍后再讲. 此外, 作
+为例外处理考虑, 如果有一个外部的类或者函数想要访问一个类的
+\verb|private| 成员, 则可以通过关键字 \verb|friend| 声明例外. 我们现在
+就只要有这些印象, 具体的使用规范我们到实例中讲.
+
+比如, 上面的学生类, 也许更严格的规范是这样的:
+\begin{verbatim}
+class 学生
+{
+/// 数据:
+private: 
+    int 学号;
+    bool 性别;
+    double 体重;
+/// 操作:
+public:
+    吃(double x); // 体重增加 x.
+    跑(double t); // 体重减轻 t * 0.1. 
+    变性();  // 如果成功, 性别取反.
+    ...
+}
+\end{verbatim}
+
+从一个类产生一个具体的实例, 有一些特殊的时间节点, 需要我们格外关注:
+\begin{itemize}
+\item 当一个实例被创建和初始化数据时；
+\item 当一个实例被删除时；
+\item 从一个已存在的实例复制一个新的实例；
+\end{itemize}
+C++ 为这些时刻做了专门的规定, 也就是我们课本 1.5.6 描述的 The Big
+Five.
+
+首先介绍两个最基本的规定:
+\begin{itemize}
+  \item 构造函数, constructor. 规定必须有一个函数, 函数名和类名一致,
+    没有返回类型. 参数可以自定. 这是在创建实例时, 会第一个调用的函数,
+    因此可以在这里规定实例的数据如何初始化.
+  \item 析构函数, destructor. 规定必须有一个函数, 函数名为\~类名, 同样
+    没有返回类型, 一般也没有参数. 这是当一个实例正常删除时, 最后被调用
+    的一个函数, 在这里可以做一些收尾工作, 比如确保动态分配的内存都已经
+    安全释放.
+\end{itemize}
+如果没有显式声明构造和析构函数, 那么编译器也会默认产生一个缺省的构造函
+数和析构函数. 它们的都相当于一个带空参数的空函数. 和 C++ 其他函数一样,
+构造函数可以重载, 但析构不会重载(为什么?).
+
+现在来考虑如何设计和实现 ArrayList. 这里我们不实现 \verb|next| 和
+\verb|previous| 操作, 因为过于平凡. 而且一旦增加这两个操作, 我们就必须
+在数据成员中增加一个 currentPosition. (为什么?)
+
+以下是类的设计:
+
+\begin{lstlisting}[language=C++]
+#ifndef __CRAZYFISH_ARRAYLIST__
+#define __CRAZYFISH_ARRAYLIST__
+
+#include <iostream>
+
+/// 元素的类型.
+typedef double t_ele;
+
+/// 元素下标的类型.
+typedef int t_idx;
+
+/// 代表不存在的下标位置.
+#define NIL -1
+
+class ArrayList
+{
+private:
+	t_idx size = 0;			/**< List 的大小. */
+	t_ele *data = nullptr;		/**< 存放数据的内存区域. */
+
+public:
+	/** 
+	 * 默认构造函数.
+	 * 
+	 */
+	ArrayList(){};
+
+	/** 
+	 * 析构函数.
+	 * 
+	 */
+	~ArrayList();
+
+	/** 
+	 * 列出表内全部元素.
+	 * 
+	 */
+	void printList() const;
+
+	/** 
+	 * 删除表内全部元素, 使之成为空表.
+	 * 
+	 */
+	void makeEmpty();
+
+	/** 
+	 * 查找指定元素. 
+	 * 
+	 * @param _val 被查找的元素.  
+	 * 
+	 * @return 第一个找到的元素的位置, 如果没有找到, 返回 NIL.
+	 */
+	t_idx find(t_ele _val) const;
+	
+	/** 
+	 * 在指定位置插入指定元素值. 原位置元素和一切后续元素依次后移.
+	 * 
+	 * @param _val 插入的元素.
+	 * @param _pos 指定位置. 如果位置错误则报错. 
+	 */
+	void insert(t_ele _val, t_idx _pos);
+
+	/** 
+	 * 删除第一个指定元素值(如有), 一切后续元素(如有)依次前移. 
+	 * 如果不存在该值元素, 则什么也不发生.
+	 * 
+	 * @param _val 指定元素值.
+	 */
+	void remove(t_ele _val);
+
+	/** 
+	 * 返回 List 的指定位置元素值.
+	 * 
+	 * @param _pos 指定位置.
+	 * 
+	 * @return 指定元素值.
+	 */
+	t_ele findKth(t_idx _pos) const;
+};
+#else
+/// DO NOTHING.
+#endif
+\end{lstlisting}
+
+这里说明几点:
+
+\begin{itemize}
+  \item 关键字 \verb|const| 放在函数后面, 表示这个函数不会改动类的数据
+    和结构, 可以认为是一个静态操作的标记；
+  \item 由于还未学习 C++ 的很多特性, 因此这里采用了宏和 \verb|typedef|
+    对数据做了抽象. 在后续的学习中, C++ 会有更好的机制；
+  \item 这里的注释符合 Doxygen 的规范, 便于自动生成文档. 这也是推荐的
+    注释格式. 建议使用适当的工具辅助你产生规范的注释；
+  \item 除了 \verb|next| 和 \verb|previous|, 这个设计也没有考虑出错和
+    报错. 留待后续讨论.
+  \item 关键字 \verb|nullptr| 是 C++ 0x 标准中新增的, 用来代替宏
+    \verb|NULL|.
+\end{itemize}
+
+我们在测试时注意到, 已现有的框架, 要初始化一个列别是繁琐的. 比如为了实
+现课本 3.2 导言中的例子, 我们不得不执行这段代码:
+
+\begin{verbatim}
+ArrayList A;
+A.insert(34, 0);
+A.insert(12, 1);
+A.insert(52, 2);
+A.insert(16, 3);
+A.insert(12, 4);
+\end{verbatim}
+
+为此, 我们重载一个新的构造函数:
+
+\begin{verbatim}
+/** 
+* 初始化构造函数.
+* 
+* @param _l 初始化列表.
+*/
+ArrayList(std::initializer_list<t_ele> _l);
+\end{verbatim}
+这里用到了 C++11 的新特性 \verb|initializer_list|. 我们需要引用头文件:
+\begin{verbatim}
+#include <initializer_list>
+\end{verbatim}
+我们在实现它时, 也用了一些 C++11 的新特性:
+\begin{verbatim}
+ArrayList::ArrayList(std::initializer_list<t_ele> _l)
+{
+	size = _l.size();
+	data = new t_ele[size];
+	t_idx i = 0;
+	for (t_ele e : _l)
+		data[i++] = e;
+};
+\end{verbatim}
+注意这个 \verb|for| 的新颖的格式, 具有浓郁的 Python 风格了. 它的语法意
+义是``\verb|e| 依次取遍 \verb|_l| 中的每一个 \verb|t_ele| 值''.
+
+有了这个初始函数, 我们的测试初始化就简单了:
+\begin{verbatim}
+ArrayList A{34, 12, 52, 16, 12};
+\end{verbatim}
+
+在测试 \verb|insert| 和 \verb|findKth| 时, 如果用户提供了错误的
+\verb|_pos|, 那么会导致数组越界, 但编译器语法检查会无视这一点. 甚至在
+测试运行时, 这样的语句也未必会导致系统运行错误.
+\begin{verbatim}
+std::cout << A.findKth(10) << std::endl;
+\end{verbatim}
+我们只有在做内存泄漏检查时才能发现这一点:
+\begin{verbatim}
+valgrind ./test
+\end{verbatim}
+为了解决这个问题, 我们需要自己制定错误异常检测和退出机制. 我们现在并不
+打算介绍完整的 C++ 异常信号机制, 而是用手工代码来强调这个问题的必要性.
+我们需要在每次外部调用位置信息的时候, 对它是否越界做一个检查: 
+\begin{verbatim}
+t_ele ArrayList::findKth(t_idx _pos) 
+{
+     if (_pos > size)
+         _error_exit(1);
+     return data[_pos];
+};
+\end{verbatim}
+然后设计一个类的内部(私有)函数来统一处理出错信息. 因为我们可能的错误也
+许不止这一个.
+\begin{verbatim}
+/** 
+* 异常退出.
+* 
+* @param _err_code 出错代码.
+*  1 : 越界错误.
+* 
+*/
+void _error_exit(t_err _err_code);
+\end{verbatim}
+由此, 我们还需要规定一个统一的出错码 \verb|_err_code|, 以及它的类型
+\verb|t_err|. 作为退出函数, 我们则调用了 \verb|cstdlib| 库中的
+\verb|exit| 函数, 并用一个 $-1$ 参数表示这不是一个正常的退出. 这个信息
+会通过一种信号机制传递给操作系统. 我们这里先不用去理会.
+
+现在, 我们的实现会捕捉越界错误, 并且给出警告后强制退出. 作为引入异常处
+理机制的最后一个需要提醒的地方, 我们注意到 \verb|findKth| 函数, 不能再
+在后面施加 \verb|const| 参数了. 尽管它概念上仍然是一个静态操作, 但它有
+可能因为下标越界而强制退出, 这是一个非静态的行为. 
+\begin{verbatim}
+void ArrayList::_error_exit(t_err _err_code)
+{
+  switch (_err_code)
+  {
+    case 1:
+      std::cerr << "Out of the range of the position." << std::endl;
+    default:
+      makeEmpty();
+      std::exit(-1);
+  }
+};
+\end{verbatim}
+
+\subsection{表的单链表(SingleLinkedList)实现}
+在这种实现中, 我们将基本数据单元组织成一个节点(node), 每一个 node 由数
+据和下一个节点的地址构成. 这样形成的表结构称为单链表(Single Linked
+List). 当然也可以在节点中增加上一个节点的地址, 从而构成双链表(Double
+Linked List). 我们这里演示一个单链表的实现. 首先来设计其节点.
+
+\begin{verbatim}
+class Node
+{
+private:
+  t_ele data;
+  Node* next = nullptr; 
+  Node(){};
+  Node(t_ele _val){data = _val;};
+  ~Node(){};
+};
+\end{verbatim}
+这里我们对 \verb|Node| 的定义中用到了自身 \verb|Node*|, 这种递归的定义
+在 C 语言年代就是允许的.
+
+我们这里沿用了上一个实现中对 \verb|t_ele| 的定义. 这种方式有一个严重的
+问题就是一旦用户想要修改 \verb|t_ele|, 比如改成一个结构体, 那么他必须
+修改源代码, 然后重新编译全部文件. 这对于代码稳定来说是危险且低效的. 也
+不符合 C++ 追求极致抽象的精神. 因此 C++ 提供了模板机制(template), 在函
+数库中只规定抽象数据类型和具体数据类型的对应规则, 具体的指定交给用户去
+决定. 但这也意味着, 类实际上是在预编译阶段才真正确定的. 这就导致较难像
+之前那样, 分离 .h 头文件和函数实现的 .cpp 文件, 也较难通过提供 .h 和
+.o 文件给用户使用. 当然也许根本没这个必要, 如果你是开源的信徒, 那么直
+接把全部内容都写在 .h 文件中就可以了. 目前, 代表 C++ 语言未来标准的
+Boost 库就是这样做的.
+
+我们现在来改写我们的节点设计:
+\begin{verbatim}
+template <typename T>
+class Node
+{
+private:
+  T data;
+  Node* next = nullptr; 
+  Node(){};
+  Node(T _val){data = _val;};
+  ~Node(){};
+};
+\end{verbatim}
+现在原本的 \verb|t_ele| 被我们用数据类型模板参数 \verb|T| 代替. 它和
+\verb|typedef| 最大的区别是, 这个 \verb|T| 具体是什么数据类型, 是由使
+用这个库的用户在写应用代码时决定的. 比如用户想用 \verb|double| 作为实
+际类型, 那么他就可以这样声明一个节点:
+\begin{verbatim}
+Node<double> A;
+\end{verbatim}
+当用户的代码被编译时, 编译器会在预处理阶段, 直接根据模板产生真正包含实
+际类的代码, 然后再编译. 我们接下去都会使用模板.
+
+接下去一个问题是, 我们接下去的设计, 会出现两个类, 节点和链表. 它们之间
+的关系是什么? 对象之间的关系, 有很多种, 常见的有:
+\begin{itemize}
+  \item A is a B, 也即 A 是具体的, 而 B 是抽象的. 如张三是一个人. 然后我们设
+  计时, 将人设计成一个类, 然后张三是人的一个实例. 这种就是典型的 is a 关系.
+  \item A has a B, 也即 B 是 A 的一部分. A 和 B 可以都是抽象的. 比如人
+    有一个头. 这种抽象层面的定义会直接影响到全部具体层面的实例. 现在张
+    三作为一个人, 必须有一个具体的头. 
+\end{itemize}
+现在我们注意到, 链表 has a 节点. 所以, 节点应该作为链表的一个成员是无
+异议的. 但节点这个概念, 应该独立于链表存在么? 比如头这个概念, 可以独立
+于人存在. 猪也可以有猪头. 但如果头和人这两个概念完全各自独立, 又各自可
+以实例化, 那么就会出现: 张三是一个人, 猪头是一个头, 张三可以长一个猪头.
+所以这种抽象的讨论是有意义的, 它规定了当我们的概念在具体化时, 能够表现
+的范畴. 这里作为设计师要考虑的问题就是, 是否应该或有必要让这种异化的实
+例存在. 比如在我们的设计中, 如果我们的节点的类定义也放到单链表定义中去,
+那么就意味着我们给单链表单独定制了一种节点, 该节点除了单链表, 不会(不
+允许)有任何其他应用场合. 如果你说, 从代码复用的角度出发, 也许节点这种
+结构, 可能有更多的数据结构应用场合, 因此不如将它定义在链表类之外, 然后
+根据需要拼装. 我们甚至可以定义单链表节点和双链表节点, 然后直接拼装成单
+链表和双链表. 但这么做的问题是, 你也可能错误地将双链表节点用于单链表.
+而且这种错误, 在使用中不会有任何逻辑错误, 但会不必要占用额外的资源, 并
+增加内存泄漏的风险.
+
+这一段讨论, 提示我们封装和代码复用都是 C++ 的基本原则, 但它们也可能需
+要做一个平衡. 在这里, 我个人坚持代码的安全和稳定高于复用. 同时, 为了简
+化实现, 我将把单链表节点的定义直接放到单链表的定义内部去. 这种实现, 等
+于说, 节点是一个依附于链表的概念. 该头之所以是人头, 因为它定义在人内部,
+所以任何人的实例上不可能存在猪头, 哪怕它长得像猪头, 它按定义也是人头.
+未来等我们设计水平提高了, 也许会有更好的策略.
+
+\begin{itemize}
+  \item {\bf 封装原则}: 每一个属性和函数, 在安全和必要的前提下, 都要严
+    格约束它的作用范围和可视范围. 在抽象概念内部的属性, 应该通过接口函
+    数和外部交换数据. (只有张三能动自己的头, 理论上...)
+  \item {\bf 代码复用}: 在一个独立代码系统中, 尽量避免出现内容或效果完
+    全一致的两段代码. 应该通过函数等统一调用. 这不仅仅是为了节省代码量,
+    更重要的是避免冗余操作和数据. (如果要砸头, 不管是张三的头还是猪头,
+    同一根棍子砸最公平...)
+\end{itemize}
+
+现在看一下我们的单链表设计:
+
+\begin{lstlisting}[language=C++]
+#ifndef __CRAZYFISH_SINGLELINKED_LIST__
+#define __CRAZYFISH_SINGLELINKED_LIST__
+
+#include <iostream>
+#include <limits>
+#include <initializer_list>
+
+/// 元素下标的类型.
+typedef int t_idx;
+
+/// 出错代码类型.
+typedef int t_err;
+
+template <typename T>
+class SingleLinkedList
+{
+private:
+    class Node
+    {
+        T data;			/**< 节点内存放的数据. */
+        Node* next = nullptr;	/**< 指向下一个节点的指针. */
+
+        /** 
+         * 带数据初始化的构造函数.
+         * 
+         * @param _val 初始化的数据.
+         */
+         Node(const T& _val){data = _val;};
+
+         friend class SingleLinkedList<T>;
+    };
+    Node* head = nullptr;	/**< 头指针. */
+    Node* currentPos = nullptr;	/**< 当前位置的指针. 除非是空链表, 否则该指针不能空. */
+    t_idx size = 0;		/**< 节点总数. */
+
+    /** 
+     * 异常退出.
+     * 
+     * @param _err_code 出错代码.
+     *  1 : 越界错误.
+     * 
+     */
+    void _error_exit(t_err _err_code);
+
+public:
+    /** 
+     * 默认构造函数.
+     * 
+     */
+    SingleLinkedList(){};
+
+    /** 
+     * 默认析构函数.
+     * 
+     */
+    ~SingleLinkedList();
+
+    /** 
+     * 带列表初始化的构造函数.
+     * 
+     * @param _l 初始化列表.
+     */
+     SingleLinkedList(std::initializer_list<T> _l);
+
+    /** 
+     * 列出表内全部元素.
+     * 
+     */
+     void printList() const;
+
+    /** 
+     * 删除表内全部元素, 使之成为空表.
+     * 
+     */
+     void makeEmpty();
+
+    /** 
+     * 查找指定元素.
+     * 
+     * @param _val 被查找的元素.  
+     * 
+     * @return 将当前位置移动到第一个找到的元素, 如果没有找到, 则当前
+     * 位置不动.
+     */
+     void find(const T& _val);
+
+    /** 
+     * 在当前位置之后插入指定元素. 空表则直接插入作为第一个元素. 插入
+     * 完成后, 新的当前位置为插入的元素.
+     * 
+     * @param _val 插入的元素值.
+     */
+     void insert(const T& _val);
+
+    /** 
+     * 如果是空链表, 或者当前位置指向最后一个元素, 则什么也不做；如果
+     * 只有一个元素, 删除该元素成为空链表；如果不止一个元素, 且当前位
+     * 置不是最后一个元素, 则删除当前位置的下一个元素. 删除之后, 当前
+     * 位置不动.
+     * 
+     */
+     void remove();
+
+    /** 
+     * 返回指定序号元素值. (低效!) 如果链表内的元素不到 k 个, 则给出警
+     * 告.
+     * 
+     * @param _pos 指定位置.
+     * 
+     * @return 指定元素值.
+     */
+     T& findKth(t_idx _pos);
+
+    /** 
+     * 将当前位置后移一位, 如果已经是最后一个元素, 则不变.
+     * 
+     */
+     void next();
+
+    /** 
+     * 将当前位置前移一位, 如果已经是 head, 则不变. (低效!)
+     * 
+     */
+     void previous();
+
+    /** 
+     * 判定链表是否为空.
+     * 
+     * 
+     * @return 空链表返回 true, 非空返回 false.
+     */
+     bool is_empty() const;
+
+    /** 
+     * 得到当前位置的元素值. 静态版本.
+     * 
+     * 
+     * @return 当前位置的元素值的静态引用.
+     */
+     const T& getCurrentVal() const; 
+};
+\end{lstlisting}
+
+我们仍然保留了
+\begin{verbatim}
+/// 元素下标的类型.
+typedef int t_idx;
+
+/// 出错代码类型.
+typedef int t_err;
+\end{verbatim}
+因为这两种类型并不会频繁修改, \verb|typedef| 相对更加方便. 而对于数据
+本身的类型, 则用模板机制进行了抽象. 这样用户就可以在写应用代码时, 具体
+决定用什么类型. 因为链表是一种动态内存管理机制, 因此相对位置比绝对位置
+更有意义. 所以我们实现了 \verb|next| 和 \verb|previous| 操作. 为了配合
+这两个操作, 我们在基本属性中增加了 \verb|currentPos|. 请思考一下这个属
+性的必要性. 这里, 我们规定 \verb|currentPos| 除非在空链表中, 否则必须
+指向一个实际的元素, 不能是 \verb|nullptr|. 这个属性的引入, 其实增加了
+很多额外的工作量. 比如我们必须始终考虑确保这个属性的值的正确性. 特别是
+在 \verb|find| 操作中, 如何合理地规定它的变化. 同时, 这也导致
+\verb|find| 不再能保持为一个静态操作. 事实上, 对每一个动态操作, 我们都
+要考虑每一个成员属性的正确性和一致性. 比如这里, 逻辑上我们可以通过
+\verb|currentPos| 是否为 \verb|nullptr| 来判断这个链表是否为空链表. 但
+这个做法并不好. 因为它依赖于我们对 \verb|currentPos| 的特殊规定, 因此
+不如判定 \verb|head| 是否为 \verb|nullptr| 自然. 但这就导致一个一致性
+问题, 我们必须确保在空链表中, \verb|currentPos| 和 \verb|head| 总都是
+\verb|nullptr|. 如果不一致, 那么说明代码出了问题. 合理的做法是在
+\verb|is_empty| 中增加判定语句或断言 (assert) 来保证. 这就会更增加我们
+的代码量. 因此, 不要增加不必要的属性, 此外, 这里大家可以再体会一下确保
+只有一个 \verb|is_empty|, 也就是代码复用的意义所在.
+
+关于模板类的函数实现, 有两个需要注意的问题. 首先, 如果没有必要, 不要再
+去考虑代码分离的问题, 也就是把实现单独写成一个 .cpp 文件是繁琐且无聊的.
+在开源机制下, 不如全部都写在 .h 文件内. 其次, 因为类的申明带有抽象的模
+板参数, 因此对每一个成员函数, 也必须跟上这种模板参数抽象机制. 也就是说,
+模板类的成员函数, 天然就是带模板参数的模板函数. 看一个具体的例子:
+\begin{verbatim}
+template <typename T>
+void SingleLinkedList<T>::insert(const T& _val)
+{
+    ...
+};
+\end{verbatim}
+这里第一行表示下面定义的内容, 带有一个表示类型的模板参数 \verb|T|, 这
+里参数标识名一般需要和模板类一致, 否则会有严重的可读性问题. 第二行出现
+了两个 \verb|T|, 第一个是一个模板类的具体化, 也就是把第一行的参数
+\verb|T| 传递过来, 然后形成一个具体的类 \verb|SingleLinkedList<T>|, 因
+此这个参数是不可缺少的, 而且本质上, 我们在一次编译中, 只实现一个针对具
+体 \verb|T| 的具体版本 (这里的逻辑关系和规则, 认真考虑一下!)；而第二个
+\verb|T| 则是对第一行 \verb|T| 的直接引用.
+
+这里顺便说一下, 如果大家觉得每一个函数前都要写一行
+\begin{verbatim}
+template <typename T>
+\end{verbatim}
+太烦, 可以考虑用
+\begin{verbatim}
+#define TEMPLATE template <typename T>
+\end{verbatim}
+来替换, 特别是当模板参数非常多或复杂时.
+
+对指针操作还不熟悉的同学, 请对照代码和课本仔细推敲. 特别是
+\begin{verbatim}
+template <typename T>
+void SingleLinkedList<T>::insert(const T& _val)
+{
+	Node *p = new Node(_val);
+	if (is_empty())
+		head = p;
+	else
+	{
+		p->next = currentPos->next;
+		currentPos->next = p;
+	}
+	currentPos = p;
+	size++;
+};
+
+template <typename T>
+void SingleLinkedList<T>::remove()
+{
+	if (is_empty() || currentPos->next == nullptr)
+		;
+	else if (head->next == nullptr)
+		makeEmpty();
+	else 
+	{
+		Node* p = currentPos->next;
+		currentPos->next = currentPos->next->next;
+		delete p;
+		size--;
+        }
+};
+\end{verbatim}
+这两个函数的实现, 请考虑这里 \verb|Node* p| 的必要性和 \verb|delete|
+的执行时机.
+
+此外要注意, \verb|findKth| 和 \verb|previous| 这两个函数都是
+$\Theta(n)$ 代价的 (请证明一下). 因此效率低下, 在实际的单链表应用中,
+不会出现.
+
+对于动态内存操作, 一个常见的错误是忘记释放内存, 这将导致内存泄漏. 系统
+提供了 \verb|valgrind| 工具, 可以做检查. 当然全局调试工具 \verb|gdb|
+也可以做到. 
+
+接下去 3.3 \~ 3.5 节, 课本分析了标准 C++ 库 STL 里面 \verb|vector| 和
+\verb|list| 的实现, 并给出了完整的代码. 请认真阅读, 学习. 课本的代码是
+一个简化版本, 但可以用. 请大家注意:
+
+\begin{itemize}
+\item \verb|vector| 中通过重载运算符 \verb|[]| 使之读取接口和标准数组一致；
+\item Iterator 方法如何确保容器(container, 包括 \verb|vector| 和
+  \verb|list|) 不发生越界错误, 特别是如何通过重载运算符, 保持具有一致
+  的操作接口；
+\item 继承的运用, 这里普通的 Iterator 是 Const Iterator 的一个派生. 
+\end{itemize}
+
+\section{堆栈和队列}
+
+堆栈(stack)和队列(queue)可以认为是表的一个应用. 它们的基本结构和操作并
+没有发生实质变化, 它们可以用数组或者链表作为底层实现, 主要特性和区别发
+生在如何使用上. 这里我们根据需要和惯例, 给出一些特殊的表操作:
+\begin{itemize}
+  \item {\bf push, 推入} 向表插入(insert)一个新元素；
+  \item {\bf pop, 弹出} 从表内弹出一个元素, 并将它从表中删除. 以上两个
+    操作, 因为效率的原因, 我们一般只考虑发生在表的开头或结尾.
+  \item {\bf top, 读出} 读取表的一个元素. 它相当于不删除的 pop 操作；
+  \item {\bf append, 加入} 向表的尾部插入一个新元素.  
+\end{itemize}
+
+以上这些特异化的操作, 是为了堆栈和队列的特殊要求定制的. 堆栈和队列本质上都是表, 主要区别是
+每一次 pop 或者 top 得到的元素,
+\begin{itemize}
+\item {\bf 堆栈} 是最近一次 push 的元素, 先入先出(First in First Out,
+  FIFO).
+\item {\bf 队列} 是表中最早 push 的元素, 后入先出(Last in First Out,
+  LIFO).
+\end{itemize}
+
+显然, 队列这种特性是为了对排队建模. 比如我们有一台网络打印机, 然后一个
+楼层的同学都在使用. 大家都通过局域网发送打印请求, 打印服务器就会构建一
+个队列, 一边按照收到请求的先后次序向一个等待读列推入请求；另一边独立地
+把队列中的请求, 按照先后次序弹出并执行. 这种需求在日常工作中非常常见.
+
+堆栈据信是图灵提出的一种机制. 目的是正确处理函数的调用. 比如一个函数
+A, 执行的时候调用了函数 B, 函数 B 又调用了函数 C, 函数 C 还调用了 函数
+B 和 A, 问正确的函数执行顺序是什么? 最后一次 B 调用结束了应该回到哪个
+位置? 在实际工程中, 这种重叠交叉的嵌套调用可以有几千层. 用堆栈的模型很
+容易解决这个问题. 我们只要记下调用发生的先后次序:
+
+\begin{center}
+A -> B -> C -> B-> A
+\end{center}
+
+然后按照堆栈先进先出的原则处理就可以了. 也就是这里真正最先完成的函数是
+最后一个 A, 然后返回 B, B 完成了返回 C, 再依次是 B 和 A. 除了函数调用,
+在一些括号匹配等问题上, 堆栈也能很方便地解决.
+
+显然, 堆栈和队列概念都是简单的, 我们直接来看一下如何应用于具体问题. 我
+们将采用 STL 提供的 stack 和 queue 来完成我们的例子. 顺便熟悉一下 C++
+STL.
+
+\subsection{堆栈应用: 四则混合计算器}
+
+用户输入一串字符串, 如果它构成有意义的四则混合运算表达式, 则给出计算结
+果, 否则给出错误提示. 例如, 输入
+\begin{verbatim}
+3.1 * (1.7 + 2.1) / 5.0
+\end{verbatim}
+输出 \verb|2.356|. 
+
+我们的表达式符合 C / C++ 的规范, 即有意义的字符是 $0 \sim 9$, $+ - *
+/$, 空格(包括 TAB, 都忽略), 括号(只允许小括号, 但可以嵌套).
+
+这里我们采取尽可能简单的设计思路. 按以下步骤实施:
+
+\begin{enumerate}
+\item 排除掉全部错误的表达式和干扰的符号(如连续多个空格或 TAB)；
+\item 检查括号的匹配性, 将表达式转换成便于计算的格式；
+\item 计算表达式, 给出结果.
+\end{enumerate}
+
+第一步, 依次读入字符, 一旦发现非法字符, 停止, 输出错误. 否则过滤掉空格,
+形成一个新的干净的表达式. 这里可以用一个字符队列. 当输入过程变得复杂,
+比如不止一个输入对象, 而且会发生并发, 锁死时, 采用队列是正确的做法.
+
+接下去, 我们人类之所以要使用括号, 其实是因为我们采用了中缀表达式(inﬁx
+expression):
+\begin{verbatim}
+操作数1 运算符 操作数2 
+\end{verbatim}
+这样当\verb|操作数2|嵌套了表达式时, 我们就不得不考虑运算优先级的问题,
+最终导致了
+\begin{itemize}
+\item 先乘除, 后加减；
+\item 括号优先级最高.
+\end{itemize}
+这两条奇葩的规定. 这本质上是因为我们有一个线性思考的大脑. 而计算机则表
+示, 运算优先级是一个伪命题. 你要做的是, 改变书写习惯, 成为后缀表达式
+(postﬁx expression), 又称逆波兰式(reverse Polish notation):
+\begin{verbatim}
+操作数1 操作数2 运算符  
+\end{verbatim}
+比如
+\begin{verbatim}
+3.1 * (1.7 + 2.1) / 5.0
+\end{verbatim}
+写成后缀表达式就是
+\begin{verbatim}
+3.1 1.7 2.1 + * 5.0 /
+\end{verbatim}
+运行规则是: 准备一个堆栈, 依次读入并压入 \verb|3.1|, \verb|1.7|,
+\verb|2.1|, 一旦读到一个运算符\verb|+|, 就把前两个操作数都弹出
+(LIFO), 然后计算其结果, 作为新的操作数压回去. 这里就是计算
+\begin{verbatim}
+1.7 2.1 +
+\end{verbatim}
+然后把计算结果 \verb|3.8| 压入. 继续, 下一个输入是 \verb|*|, 然后再弹
+出最后两个压入数据,
+\begin{verbatim}
+3.1 3.8 *
+\end{verbatim}
+结果 \verb|11.78| 压入. 再继续, 读入 \verb|5.0|, 压入. 读入 \verb|\|,
+\begin{verbatim}
+11.78 5.0 /
+\end{verbatim}
+结果是 \verb|2.356|. 注意这时, 输入已经结束, 而堆栈也是空的, 所以计算
+结束. 整个过程中, 没有任何括号的必要, 甚至没有任何优先级的必要.
+
+这里我们其实已经完成了第三步, 如果我们有办法将中缀表达式转换成后缀表达
+式. 这件事似乎很复杂, 因为括号除了优先级规定, 还有是否匹配的问题. 但办
+法也是用堆栈.
+
+课本 3.6.3 描述了中缀表达式转后缀表达式的过程, 以及后缀表达式的计算过
+程. 但没有给出代码. 我们用 STL 提供的工具, 快速实现一下.
+
+接下去的工作作为作业: 请完成一个四则混合运算器.
+\begin{itemize}
+\item 输入: 一个由数字, 运算符, 空格, 括号等构成的中缀表达式字符串；
+\item 输出: 如果输入是合法的中缀表达式, 给出其运算结果, 否则输出错误.
+\end{itemize}
+具体要求见学在浙大. 
+
+\subsection{队列应用: 排队的估计和模拟}
+
+这个问题是一门叫排队论的分支学科研究的核心问题. 我们来考虑其最基本的模
+型之一. 比如, 现在有一个核酸检测点, 共有 $k$ 个检测台. 每个检测台每个
+单位时间检测的人数是 $\mu$, 而每个单位时间到达的人数是 $\lambda$. 现在
+问, 作为管理者, 应该如何规划队伍的数量, 使得队伍尽可能有序和高效；而作
+为一般群众, 我们的应对策略又该是什么? 
+
+\subsection{简陋条件下的数组实现: 堆栈, 队列和模拟链表}
+
+所谓简陋条件, 指的是不动用 STL 这种复杂工具. 可能是因为编译器, 硬件或
+工作环境不允许. 也可能仅仅是因为没这个必要. 而解决方案是一致的, 用数组.
+
+几乎任何语言都有数组. 队列的数组实现是自然的, 但仍然需要两个下标记录,
+一个记录当前的队列头, 一个记录当前的队列尾. 入队就是在队尾增加一个新元
+素, 而出队只要把头位置往后挪一位就行. 从效率出发, 真实删除出队元素是不
+可行的. 而对整个队列做重排或重分配, 只会发生在数组长度耗尽的情况. 所以,
+首先在初始化时, 数组不要开得太短, 而循环指标也可以减少数组空间用尽发生
+的概率. 也就是当数组下标 $k$ 大于等于当前数组元素总数 $N$ 时,
+$$
+k = k - N.
+$$
+与之配合, 出队时, 应该把出队元素赋成一个不常用的特殊数, 比如机器最小数. 
+
+数组的堆栈实现也是类似的, 只需要标记当前栈顶的下标就行了. 入栈就是在栈
+顶插入新元素, 栈顶下标加一；出栈就是把栈顶元素读出, 同时栈顶下标减一.
+它的实现比队列更加方便.
+
+如果要操作的元素对象比较复杂, 在条件简陋时, 可以用指针数组.
+
+最后说一个极端简陋的情形: 不用指针完成链表操作. 又称为模拟链表. 其实,
+链表在计算机内部的实现, 就是依赖于类数组操作的. 计算机内部数据都是按一
+定的单位大小, 存放在连续的内存空间的, 每一个单位, 都有连续的, 唯一的内
+存地址(下标). 因此你只要模拟这种计算机内部逻辑就可以了.
+
+具体说, 就是用两个数组, 一个是数据元素数组 \verb|data[]|, 一个是下标数
+组 \verb|next[]|. 两个数组一一对应, \verb|next[i]| 里存放的是数据元素
+\verb|data[i]| 的下一个元素的下标. 如果 \verb|next[i] == -1|, 则表示
+\verb|NULL|. 而 \verb|head| 也就是 \verb|data[]| 的一个下标(未必是
+\verb|0|).
+例如:
+\begin{verbatim}
+3.1 -> 7.2 -> -1.0 -> 5.5 
+\end{verbatim}
+可以存储为:
+\begin{verbatim}
+  data[] = {5.5, 6.7, 7.2, 9.3, -1.0, 255, 3.1, 114, 514}
+  next[] = { -1,   0,   4,   0,    0,   0,   2,   0,   0}
+\end{verbatim}
+注意设 \verb|head = 6|. 我们遍历一遍: \verb|head = 6|, 所以第一个元素
+是 \verb|data[6] = 3.1|. 然后下一个元素下标是 \verb|next[6] = 2|, 元素
+是 \verb|data[2] = 7.2|. 再下一个元素下标是 \verb|next[2] = 4|, 元素是
+\verb|data[4] = -1.0|. 再下一个元素下标是 \verb|next[4] = 0|, 元素是
+\verb|data[0] = 5.5|. 再下一个元素下标是 \verb|next[0] = -1|, 已经到了
+结尾. 遍历完成. 
+
+请自行考虑如何在此框架下实现数组的基本操作和双链表等. (作业?)
+
+\bibliographystyle{plain}
+
+\bibliography{crazyfish.bib}
+
+\end{document}
